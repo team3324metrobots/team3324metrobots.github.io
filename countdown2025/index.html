@@ -320,25 +320,50 @@
             });
         }
 
-        function saveChecklistState() {
-            const state = {};
-            const checklistItems = document.querySelectorAll('.checklist-item input[type="checkbox"]');
-            checklistItems.forEach(item => {
-                state[item.id] = item.checked;
-            });
-            localStorage.setItem('checklistState', JSON.stringify(state));
-        }
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw57HWZOQ7i4thlBujV4wtQ1umK-j8jOxDCihNRKSgDmsNaAoSuDUb_UidsrYtLxfK8/exec';
 
-        function loadChecklistState() {
-            const state = JSON.parse(localStorage.getItem('checklistState')) || {};
+async function saveChecklistState() {
+    const state = {};
+    const checklistItems = document.querySelectorAll('.checklist-item input[type="checkbox"]');
+    checklistItems.forEach(item => {
+        state[item.id] = item.checked;
+    });
+    
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(state)
+        });
+        const result = await response.json();
+        if (!result.success) {
+            console.error('Failed to save state');
+        }
+    } catch (error) {
+        console.error('Error saving state:', error);
+    }
+}
+
+async function loadChecklistState() {
+    try {
+        const response = await fetch(SCRIPT_URL);
+        const data = await response.json();
+        
+        if (data.state) {
             const checklistItems = document.querySelectorAll('.checklist-item input[type="checkbox"]');
             checklistItems.forEach(item => {
-                if (state[item.id]) {
+                if (data.state[item.id]) {
                     item.checked = true;
                     item.nextElementSibling.classList.add('completed');
+                } else {
+                    item.checked = false;
+                    item.nextElementSibling.classList.remove('completed');
                 }
             });
         }
+    } catch (error) {
+        console.error('Error loading state:', error);
+    }
+}
 
         function init() {
             generateChecklists();
